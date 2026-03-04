@@ -1,56 +1,120 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Mess Intel — Weekly Survival Guide</title>
     <meta name="description" content="Your weekly mess menu decoded. Know before you go.">
-    <meta name="theme-color" content="#050505">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <!-- Open Graph -->
     <meta property="og:title" content="Mess Intel — Weekly Survival Guide">
-    <meta property="og:description"
-        content="Your weekly hostel mess menu decoded with vibes-based ratings. Know before you go.">
+    <meta property="og:description" content="Your weekly hostel mess menu decoded with vibes-based ratings.">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="https://i.imgur.com/placeholder.png">
 
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
+
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
     <div class="noise-overlay"></div>
+    <div class="gradient-bg"></div>
 
-    <main class="container">
-        <header class="hero" id="hero">
-            <div class="hero-badge">FIELD REPORT</div>
-            <h1 class="hero-title">mess intel</h1>
-            <p class="hero-subtitle">your weekly survival guide</p>
-        </header>
+    <!-- ─── HEADER ─── -->
+    <header class="app-header" id="app-header">
+        <div class="header-left">
+            <span class="header-logo">🍽️</span>
+            <span class="header-title">mess intel</span>
+        </div>
+        <div class="header-right">
+            <button class="icon-btn" id="share-btn" title="Share menu">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+                    <polyline points="16 6 12 2 8 6" />
+                    <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+            </button>
+            <button class="icon-btn" id="theme-btn" title="Toggle theme">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    class="icon-sun">
+                    <circle cx="12" cy="12" r="5" />
+                    <path
+                        d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                </svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    class="icon-moon">
+                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+                </svg>
+            </button>
+        </div>
+    </header>
 
-        <section class="status-bar" id="status-bar"></section>
+    <!-- ─── MAIN CONTENT ─── -->
+    <main class="app-main">
+        <!-- TODAY VIEW -->
+        <div class="view" id="view-today"></div>
 
-        <nav class="day-selector" id="day-selector"></nav>
+        <!-- WEEKLY VIEW -->
+        <div class="view hidden" id="view-weekly"></div>
 
-        <section class="day-content" id="day-content"></section>
-
-        <section class="stats-section" id="stats-section">
-            <h2 class="section-title">weekly debrief</h2>
-            <div class="stats-grid" id="stats-grid"></div>
-        </section>
-
-        <footer class="footer">
-            <p>ratings are vibes-based. your mileage may vary. a lot.</p>
-            <p class="footer-sub">tap any dish to adjust rating · saved locally</p>
-        </footer>
+        <!-- STATS VIEW -->
+        <div class="view hidden" id="view-stats"></div>
     </main>
+
+    <!-- ─── BOTTOM NAV ─── -->
+    <nav class="bottom-nav" id="bottom-nav">
+        <button class="nav-item active" data-view="today">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span>Today</span>
+        </button>
+        <button class="nav-item" data-view="weekly">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <span>Weekly</span>
+        </button>
+        <button class="nav-item" data-view="stats">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+            <span>Stats</span>
+        </button>
+    </nav>
+
+    <!-- ─── SHARE TOAST ─── -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ─── ONBOARDING TOOLTIP ─── -->
+    <div class="onboarding" id="onboarding">
+        <div class="onboarding-card">
+            <div class="onboarding-emoji">⭐</div>
+            <h3>Rate your food</h3>
+            <p>Tap the stars on any dish to rate it. Your ratings are saved locally.</p>
+            <button class="onboarding-btn" id="onboarding-dismiss">Got it</button>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>
