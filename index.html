@@ -32,11 +32,11 @@
         rel="stylesheet">
 
     <!-- Vercel Tracking -->
-    <script>
-        window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
-    </script>
-    <script defer src="/_vercel/speed-insights/script.js"></script>
     <script defer src="/_vercel/insights/script.js"></script>
+    <script type="module">
+        import { injectSpeedInsights } from 'https://unpkg.com/@vercel/speed-insights/dist/index.mjs';
+        injectSpeedInsights();
+    </script>
 
     <link rel="stylesheet" href="style.css">
 </head>
