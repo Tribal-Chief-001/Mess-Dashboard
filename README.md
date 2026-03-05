@@ -169,10 +169,10 @@ const MENU = {
 ### Meal Timings
 | Meal | Timing | Counter Closing |
 |------|--------|-----------------|
-| **Breakfast** | 07:30 AM – 09:00 AM | 09:00 AM |
-| **Lunch** | 12:15 PM – 02:15 PM | 02:15 PM |
-| **High Tea** | 05:15 PM – 06:15 PM | 06:15 PM |
-| **Dinner** | 07:10 PM – 08:45 PM | 08:45 PM |
+| **Breakfast** | 07:30 AM – 09:30 AM | 09:30 AM |
+| **Lunch** | 12:15 PM – 02:30 PM | 02:30 PM |
+| **Snacks** | 05:15 PM – 06:15 PM | 06:15 PM |
+| **Dinner** | 07:15 PM – 09:30 PM | 09:30 PM |
 
 ---
 
@@ -249,10 +249,10 @@ Edit the `MEAL_TIMES` constant in `app.js`:
 
 ```javascript
 const MEAL_TIMES = {
-  breakfast: { label: 'BREAKFAST', time: '07:30 – 09:00', start: 7.5, end: 9 },
-  lunch:     { label: 'LUNCH',     time: '12:15 – 14:15', start: 12.25, end: 14.25 },
-  highTea:   { label: 'HIGH TEA',  time: '17:15 – 18:15', start: 17.25, end: 18.25 },
-  dinner:    { label: 'DINNER',    time: '19:10 – 20:45', start: 19.17, end: 20.75 },
+  breakfast: { label: 'BREAKFAST', time: '07:30 – 09:30', start: 7.5, end: 9.5 },
+  lunch:     { label: 'LUNCH',     time: '12:15 – 14:30', start: 12.25, end: 14.5 },
+  highTea:   { label: 'SNACKS',    time: '17:15 – 18:15', start: 17.25, end: 18.25 },
+  dinner:    { label: 'DINNER',    time: '19:15 – 21:30', start: 19.25, end: 21.5 },
 };
 ```
 

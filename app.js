@@ -9,10 +9,10 @@ const DAY_FULL = { monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday',
 const MEALS = ['breakfast', 'lunch', 'highTea', 'dinner'];
 
 const MEAL_TIMES = {
-  breakfast: { label: 'BREAKFAST', time: '07:30 – 09:00', start: 7.5, end: 9 },
-  lunch: { label: 'LUNCH', time: '12:15 – 14:15', start: 12.25, end: 14.25 },
-  highTea: { label: 'HIGH TEA', time: '17:15 – 18:15', start: 17.25, end: 18.25 },
-  dinner: { label: 'DINNER', time: '19:10 – 20:45', start: 19.17, end: 20.75 }
+  breakfast: { label: 'BREAKFAST', time: '07:30 – 09:30', start: 7.5, end: 9.5 },
+  lunch: { label: 'LUNCH', time: '12:15 – 14:30', start: 12.25, end: 14.5 },
+  highTea: { label: 'SNACKS', time: '17:15 – 18:15', start: 17.25, end: 18.25 },
+  dinner: { label: 'DINNER', time: '19:15 – 21:30', start: 19.25, end: 21.5 }
 };
 
 // Food image mapping
@@ -315,29 +315,50 @@ function getCurrentMeal() {
 
 function getNextMeal() {
   const now = new Date();
-  const h = now.getHours() + now.getMinutes() / 60;
+  const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
   const orderedMeals = ['breakfast', 'lunch', 'highTea', 'dinner'];
 
   for (const meal of orderedMeals) {
     if (h < MEAL_TIMES[meal].start) {
       const diffH = MEAL_TIMES[meal].start - h;
-      const hours = Math.floor(diffH);
-      const mins = Math.round((diffH - hours) * 60);
-      return { meal: MEAL_TIMES[meal].label, hours, mins, key: meal, startH: MEAL_TIMES[meal].start };
+      const totalSecs = Math.floor(diffH * 3600);
+      const hours = Math.floor(totalSecs / 3600);
+      const mins = Math.floor((totalSecs % 3600) / 60);
+      const secs = totalSecs % 60;
+      return { meal: MEAL_TIMES[meal].label, hours, mins, secs, key: meal, startH: MEAL_TIMES[meal].start };
     }
   }
   // After dinner → breakfast tomorrow
   const diffH = (24 - h) + MEAL_TIMES.breakfast.start;
-  return { meal: 'BREAKFAST', hours: Math.floor(diffH), mins: Math.round((diffH - Math.floor(diffH)) * 60), key: 'breakfast', startH: MEAL_TIMES.breakfast.start };
+  const totalSecs = Math.floor(diffH * 3600);
+  const hours = Math.floor(totalSecs / 3600);
+  const mins = Math.floor((totalSecs % 3600) / 60);
+  const secs = totalSecs % 60;
+  return { meal: 'BREAKFAST', hours, mins, secs, key: 'breakfast', startH: MEAL_TIMES.breakfast.start };
 }
 
 function getMealProgress(mealKey) {
   if (!mealKey) return 0;
-  const h = new Date().getHours() + new Date().getMinutes() / 60;
+  const now = new Date();
+  const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
   const mt = MEAL_TIMES[mealKey];
   const total = mt.end - mt.start;
   const elapsed = h - mt.start;
   return Math.max(0, Math.min(1, elapsed / total));
+}
+
+function getMealTimeRemaining(mealKey) {
+  if (!mealKey) return null;
+  const now = new Date();
+  const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+  const mt = MEAL_TIMES[mealKey];
+  const diffH = mt.end - h;
+  if (diffH <= 0) return null;
+  const totalSecs = Math.floor(diffH * 3600);
+  const hours = Math.floor(totalSecs / 3600);
+  const mins = Math.floor((totalSecs % 3600) / 60);
+  const secs = totalSecs % 60;
+  return { hours, mins, secs };
 }
 
 // LocalStorage for ratings
@@ -584,12 +605,11 @@ function renderTodayView() {
   if (currentMeal) {
     const progress = getMealProgress(currentMeal);
     const mt = MEAL_TIMES[currentMeal];
-    html += renderCountdownRing(mt.label, `ends at ${mt.time.split('–')[1].trim()}`, progress, true);
+    const remaining = getMealTimeRemaining(currentMeal);
+    html += renderCountdownRing(mt.label, null, progress, true, remaining, mt.time);
   } else {
     const next = getNextMeal();
-    const timeStr = next.hours > 0 ? `${next.hours}h ${next.mins}m` : `${next.mins}m`;
-    // Calculate progress towards next meal
-    html += renderCountdownRing(`${next.meal} in ${timeStr}`, 'kitchen closed', 0, false);
+    html += renderCountdownRing(next.meal, null, 0, false, { hours: next.hours, mins: next.mins, secs: next.secs }, null);
   }
 
   // Verdict pill
@@ -654,10 +674,32 @@ function renderTodayView() {
   });
 }
 
-function renderCountdownRing(title, subtitle, progress, isLive) {
+function renderCountdownRing(title, subtitle, progress, isLive, remaining, timeRange) {
   const circumference = 2 * Math.PI * 26;
   const offset = circumference * (1 - progress);
-  return `<div class="countdown-card">
+  const pad = n => String(n).padStart(2, '0');
+
+  let timerHtml = '';
+  if (remaining) {
+    const h = remaining.hours;
+    const m = remaining.mins;
+    const s = remaining.secs;
+    timerHtml = `<div class="countdown-timer">`;
+    if (h > 0) {
+      timerHtml += `<span class="ct-digit">${pad(h)}</span><span class="ct-sep">:</span>`;
+    }
+    timerHtml += `<span class="ct-digit">${pad(m)}</span><span class="ct-sep">:</span><span class="ct-digit ct-secs">${pad(s)}</span>`;
+    timerHtml += `</div>`;
+  }
+
+  let statusSub = '';
+  if (isLive && timeRange) {
+    statusSub = `serving · ${timeRange}`;
+  } else if (!isLive) {
+    statusSub = 'kitchen closed';
+  }
+
+  return `<div class="countdown-card${isLive ? ' is-serving' : ' is-waiting'}">
     <div class="countdown-ring${isLive ? ' is-live' : ''}">
       <svg viewBox="0 0 60 60">
         <circle class="ring-bg" cx="30" cy="30" r="26"/>
@@ -669,7 +711,8 @@ function renderCountdownRing(title, subtitle, progress, isLive) {
     </div>
     <div class="countdown-info">
       <div class="countdown-status">${isLive ? '<span class="live-dot"></span>' : ''}${title}</div>
-      <div class="countdown-sub">${subtitle}</div>
+      ${timerHtml}
+      <div class="countdown-sub">${isLive ? 'remaining' : statusSub}</div>
     </div>
   </div>`;
 }
@@ -985,8 +1028,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Auto-refresh countdown every 30s
+  // Auto-refresh countdown every second for live timer
   setInterval(() => {
-    if (currentView === 'today') renderTodayView();
-  }, 30000);
+    if (currentView === 'today') {
+      // Only update the countdown card for performance
+      const card = document.querySelector('.countdown-card');
+      if (card) {
+        const currentMeal = getCurrentMeal();
+        if (currentMeal) {
+          const progress = getMealProgress(currentMeal);
+          const mt = MEAL_TIMES[currentMeal];
+          const remaining = getMealTimeRemaining(currentMeal);
+          card.outerHTML = renderCountdownRing(mt.label, null, progress, true, remaining, mt.time);
+        } else {
+          const next = getNextMeal();
+          card.outerHTML = renderCountdownRing(next.meal, null, 0, false, { hours: next.hours, mins: next.mins, secs: next.secs }, null);
+        }
+      }
+    }
+  }, 1000);
 });
