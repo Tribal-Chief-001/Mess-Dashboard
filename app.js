@@ -15,6 +15,16 @@ const MEAL_TIMES = {
   dinner: { label: 'DINNER', time: '19:15 – 21:30', start: 19.25, end: 21.5 }
 };
 
+// Helper: Get timestamp for a meal time (decimal hours) today
+function getMealTimestamp(decimalHours, dayOffset = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + dayOffset);
+  const h = Math.floor(decimalHours);
+  const m = Math.round((decimalHours % 1) * 60);
+  d.setHours(h, m, 0, 0);
+  return d.getTime();
+}
+
 // Food image mapping
 const FOOD_IMAGES = {
   breakfast: 'assets/food/breakfast.png',
@@ -306,58 +316,60 @@ function getTodayKey() {
 }
 
 function getCurrentMeal() {
-  const h = new Date().getHours() + new Date().getMinutes() / 60;
+  const now = Date.now();
   for (const [key, m] of Object.entries(MEAL_TIMES)) {
-    if (h >= m.start && h < m.end) return key;
+    const start = getMealTimestamp(m.start);
+    const end = getMealTimestamp(m.end);
+    if (now >= start && now < end) return key;
   }
   return null;
 }
 
 function getNextMeal() {
-  const now = new Date();
-  const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+  const now = Date.now();
   const orderedMeals = ['breakfast', 'lunch', 'highTea', 'dinner'];
 
   for (const meal of orderedMeals) {
-    if (h < MEAL_TIMES[meal].start) {
-      const diffH = MEAL_TIMES[meal].start - h;
-      const totalSecs = Math.floor(diffH * 3600);
-      const hours = Math.floor(totalSecs / 3600);
-      const mins = Math.floor((totalSecs % 3600) / 60);
-      const secs = totalSecs % 60;
-      return { meal: MEAL_TIMES[meal].label, hours, mins, secs, key: meal, startH: MEAL_TIMES[meal].start };
+    const startTime = getMealTimestamp(MEAL_TIMES[meal].start);
+    if (now < startTime) {
+      const diffMs = startTime - now;
+      const hours = Math.floor(diffMs / 3600000);
+      const mins = Math.floor((diffMs % 3600000) / 60000);
+      const secs = Math.floor((diffMs % 60000) / 1000);
+      return { meal: MEAL_TIMES[meal].label, hours, mins, secs, key: meal, startTime };
     }
   }
+
   // After dinner → breakfast tomorrow
-  const diffH = (24 - h) + MEAL_TIMES.breakfast.start;
-  const totalSecs = Math.floor(diffH * 3600);
-  const hours = Math.floor(totalSecs / 3600);
-  const mins = Math.floor((totalSecs % 3600) / 60);
-  const secs = totalSecs % 60;
-  return { meal: 'BREAKFAST', hours, mins, secs, key: 'breakfast', startH: MEAL_TIMES.breakfast.start };
+  const startTime = getMealTimestamp(MEAL_TIMES.breakfast.start, 1);
+  const diffMs = startTime - now;
+  const hours = Math.floor(diffMs / 3600000);
+  const mins = Math.floor((diffMs % 3600000) / 60000);
+  const secs = Math.floor((diffMs % 60000) / 1000);
+  return { meal: 'BREAKFAST', hours, mins, secs, key: 'breakfast', startTime };
 }
 
 function getMealProgress(mealKey) {
   if (!mealKey) return 0;
-  const now = new Date();
-  const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+  const now = Date.now();
   const mt = MEAL_TIMES[mealKey];
-  const total = mt.end - mt.start;
-  const elapsed = h - mt.start;
+  const start = getMealTimestamp(mt.start);
+  const end = getMealTimestamp(mt.end);
+  const total = end - start;
+  const elapsed = now - start;
   return Math.max(0, Math.min(1, elapsed / total));
 }
 
 function getMealTimeRemaining(mealKey) {
   if (!mealKey) return null;
-  const now = new Date();
-  const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+  const now = Date.now();
   const mt = MEAL_TIMES[mealKey];
-  const diffH = mt.end - h;
-  if (diffH <= 0) return null;
-  const totalSecs = Math.floor(diffH * 3600);
-  const hours = Math.floor(totalSecs / 3600);
-  const mins = Math.floor((totalSecs % 3600) / 60);
-  const secs = totalSecs % 60;
+  const end = getMealTimestamp(mt.end);
+  const diffMs = end - now;
+  if (diffMs <= 0) return null;
+  const hours = Math.floor(diffMs / 3600000);
+  const mins = Math.floor((diffMs % 3600000) / 60000);
+  const secs = Math.floor((diffMs % 60000) / 1000);
   return { hours, mins, secs };
 }
 
@@ -685,10 +697,10 @@ function renderCountdownRing(title, subtitle, progress, isLive, remaining, timeR
     const m = remaining.mins;
     const s = remaining.secs;
     timerHtml = `<div class="countdown-timer">`;
-    if (h > 0) {
-      timerHtml += `<span class="ct-digit ct-h">${pad(h)}</span><span class="ct-sep">:</span>`;
-    }
-    timerHtml += `<span class="ct-digit ct-m">${pad(m)}</span><span class="ct-sep">:</span><span class="ct-digit ct-secs ct-s">${pad(s)}</span>`;
+    // Always render hours wrapper if it ever needs to exist to avoid DOM shifts
+    timerHtml += `<div class="ct-unit ct-h-wrap ${h > 0 ? '' : 'hidden'}"><span class="ct-digit ct-h">${pad(h)}</span><span class="ct-sep">:</span></div>`;
+    timerHtml += `<div class="ct-unit"><span class="ct-digit ct-m">${pad(m)}</span><span class="ct-sep">:</span></div>`;
+    timerHtml += `<div class="ct-unit"><span class="ct-digit ct-secs ct-s">${pad(s)}</span></div>`;
     timerHtml += `</div>`;
   }
 
@@ -696,7 +708,9 @@ function renderCountdownRing(title, subtitle, progress, isLive, remaining, timeR
   if (isLive && timeRange) {
     statusSub = `serving · ${timeRange}`;
   } else if (!isLive) {
-    statusSub = 'kitchen closed';
+    const next = getNextMeal();
+    const opensAt = MEAL_TIMES[next.key].time.split(' – ')[0];
+    statusSub = `kitchen closed · opens at ${opensAt}`;
   }
 
   return `<div class="countdown-card${isLive ? ' is-serving' : ' is-waiting'}">
@@ -715,7 +729,8 @@ function renderCountdownRing(title, subtitle, progress, isLive, remaining, timeR
         <span class="ct-title-text">${title}</span>
       </div>
       ${timerHtml}
-      <div class="countdown-sub">${statusSub}</div>
+      <div class="countdown-sub">${isLive ? 'remaining' : statusSub}</div>
+      ${isLive ? `<div class="countdown-range-badge">${timeRange}</div>` : ''}
     </div>
   </div>`;
 }
@@ -729,25 +744,23 @@ function updateCountdownDom() {
 
   let progress = 0;
   let remaining = null;
+  const isCurrentlyServing = card.classList.contains('is-serving');
 
   if (currentMeal) {
-    progress = getMealProgress(currentMeal);
-    remaining = getMealTimeRemaining(currentMeal);
-
-    // Check if we just transitioned to a new state
-    if (!card.classList.contains('is-serving')) {
-      renderTodayView(); // Full re-render needed for structural changes
+    if (!isCurrentlyServing) {
+      renderTodayView(); // Full re-render on state change
       return;
     }
+    progress = getMealProgress(currentMeal);
+    remaining = getMealTimeRemaining(currentMeal);
   } else {
+    if (isCurrentlyServing) {
+      renderTodayView(); // Full re-render on state change
+      return;
+    }
     const next = getNextMeal();
     progress = 0;
     remaining = { hours: next.hours, mins: next.mins, secs: next.secs };
-
-    if (card.classList.contains('is-serving')) {
-      renderTodayView();
-      return;
-    }
   }
 
   // Soft update DOM elements
@@ -755,8 +768,12 @@ function updateCountdownDom() {
     const elH = card.querySelector('.ct-h');
     const elM = card.querySelector('.ct-m');
     const elS = card.querySelector('.ct-s');
+    const hWrap = card.querySelector('.ct-h-wrap');
 
-    if (elH && remaining.hours > 0) elH.textContent = pad(remaining.hours);
+    if (elH) {
+      elH.textContent = pad(remaining.hours);
+      if (hWrap) hWrap.classList.toggle('hidden', remaining.hours <= 0);
+    }
     if (elM) elM.textContent = pad(remaining.mins);
     if (elS) elS.textContent = pad(remaining.secs);
   }

@@ -448,8 +448,48 @@ body {
 
   50%,
   100% {
-    opacity: 0.2;
+    opacity: 0.3;
   }
+}
+
+.countdown-range-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tier-4);
+  background: rgba(52, 211, 153, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-top: 6px;
+  border: 1px solid rgba(52, 211, 153, 0.2);
+}
+
+.countdown-card.is-waiting .countdown-ring {
+  animation: slowPulse 4s ease-in-out infinite;
+}
+
+@keyframes slowPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+.ct-unit {
+  display: flex;
+  align-items: center;
+}
+
+.hidden {
+  display: none !important;
 }
 
 /* Verdict Pill */
