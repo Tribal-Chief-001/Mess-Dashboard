@@ -686,9 +686,9 @@ function renderCountdownRing(title, subtitle, progress, isLive, remaining, timeR
     const s = remaining.secs;
     timerHtml = `<div class="countdown-timer">`;
     if (h > 0) {
-      timerHtml += `<span class="ct-digit">${pad(h)}</span><span class="ct-sep">:</span>`;
+      timerHtml += `<span class="ct-digit ct-h">${pad(h)}</span><span class="ct-sep">:</span>`;
     }
-    timerHtml += `<span class="ct-digit">${pad(m)}</span><span class="ct-sep">:</span><span class="ct-digit ct-secs">${pad(s)}</span>`;
+    timerHtml += `<span class="ct-digit ct-m">${pad(m)}</span><span class="ct-sep">:</span><span class="ct-digit ct-secs ct-s">${pad(s)}</span>`;
     timerHtml += `</div>`;
   }
 
@@ -710,11 +710,63 @@ function renderCountdownRing(title, subtitle, progress, isLive, remaining, timeR
       <div class="countdown-label">${isLive ? '⏱' : '⏳'}</div>
     </div>
     <div class="countdown-info">
-      <div class="countdown-status">${isLive ? '<span class="live-dot"></span>' : ''}${title}</div>
+      <div class="countdown-status">
+        ${isLive ? '<span class="live-dot"></span>' : ''}
+        <span class="ct-title-text">${title}</span>
+      </div>
       ${timerHtml}
-      <div class="countdown-sub">${isLive ? 'remaining' : statusSub}</div>
+      <div class="countdown-sub">${statusSub}</div>
     </div>
   </div>`;
+}
+
+function updateCountdownDom() {
+  const card = document.querySelector('.countdown-card');
+  if (!card) return;
+
+  const currentMeal = getCurrentMeal();
+  const pad = n => String(n).padStart(2, '0');
+
+  let progress = 0;
+  let remaining = null;
+
+  if (currentMeal) {
+    progress = getMealProgress(currentMeal);
+    remaining = getMealTimeRemaining(currentMeal);
+
+    // Check if we just transitioned to a new state
+    if (!card.classList.contains('is-serving')) {
+      renderTodayView(); // Full re-render needed for structural changes
+      return;
+    }
+  } else {
+    const next = getNextMeal();
+    progress = 0;
+    remaining = { hours: next.hours, mins: next.mins, secs: next.secs };
+
+    if (card.classList.contains('is-serving')) {
+      renderTodayView();
+      return;
+    }
+  }
+
+  // Soft update DOM elements
+  if (remaining) {
+    const elH = card.querySelector('.ct-h');
+    const elM = card.querySelector('.ct-m');
+    const elS = card.querySelector('.ct-s');
+
+    if (elH && remaining.hours > 0) elH.textContent = pad(remaining.hours);
+    if (elM) elM.textContent = pad(remaining.mins);
+    if (elS) elS.textContent = pad(remaining.secs);
+  }
+
+  const ringProgress = card.querySelector('.ring-progress');
+  if (ringProgress) {
+    const circumference = 2 * Math.PI * 26;
+    const offset = circumference * (1 - progress);
+    ringProgress.style.strokeDashoffset = offset;
+  }
 }
 
 // ─── WEEKLY VIEW ───
@@ -1031,20 +1083,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Auto-refresh countdown every second for live timer
   setInterval(() => {
     if (currentView === 'today') {
-      // Only update the countdown card for performance
-      const card = document.querySelector('.countdown-card');
-      if (card) {
-        const currentMeal = getCurrentMeal();
-        if (currentMeal) {
-          const progress = getMealProgress(currentMeal);
-          const mt = MEAL_TIMES[currentMeal];
-          const remaining = getMealTimeRemaining(currentMeal);
-          card.outerHTML = renderCountdownRing(mt.label, null, progress, true, remaining, mt.time);
-        } else {
-          const next = getNextMeal();
-          card.outerHTML = renderCountdownRing(next.meal, null, 0, false, { hours: next.hours, mins: next.mins, secs: next.secs }, null);
-        }
-      }
+      updateCountdownDom();
     }
   }, 1000);
 });
