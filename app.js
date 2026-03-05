@@ -329,14 +329,23 @@ function getNextMeal() {
   const now = Date.now();
   const orderedMeals = ['breakfast', 'lunch', 'highTea', 'dinner'];
 
-  for (const meal of orderedMeals) {
+  for (let i = 0; i < orderedMeals.length; i++) {
+    const meal = orderedMeals[i];
     const startTime = getMealTimestamp(MEAL_TIMES[meal].start);
     if (now < startTime) {
       const diffMs = startTime - now;
       const hours = Math.floor(diffMs / 3600000);
       const mins = Math.floor((diffMs % 3600000) / 60000);
       const secs = Math.floor((diffMs % 60000) / 1000);
-      return { meal: MEAL_TIMES[meal].label, hours, mins, secs, key: meal, startTime };
+
+      let prevEndTime;
+      if (i === 0) {
+        prevEndTime = getMealTimestamp(MEAL_TIMES.dinner.end, -1);
+      } else {
+        prevEndTime = getMealTimestamp(MEAL_TIMES[orderedMeals[i - 1]].end);
+      }
+
+      return { meal: MEAL_TIMES[meal].label, hours, mins, secs, key: meal, startTime, prevEndTime };
     }
   }
 
@@ -346,7 +355,17 @@ function getNextMeal() {
   const hours = Math.floor(diffMs / 3600000);
   const mins = Math.floor((diffMs % 3600000) / 60000);
   const secs = Math.floor((diffMs % 60000) / 1000);
-  return { meal: 'BREAKFAST', hours, mins, secs, key: 'breakfast', startTime };
+  const prevEndTime = getMealTimestamp(MEAL_TIMES.dinner.end);
+  return { meal: 'BREAKFAST', hours, mins, secs, key: 'breakfast', startTime, prevEndTime };
+}
+
+function getWaitingProgress(nextMeal) {
+  if (!nextMeal || !nextMeal.prevEndTime || !nextMeal.startTime) return 0;
+  const now = Date.now();
+  const total = nextMeal.startTime - nextMeal.prevEndTime;
+  if (total <= 0) return 0;
+  const elapsed = now - nextMeal.prevEndTime;
+  return Math.max(0, Math.min(1, elapsed / total));
 }
 
 function getMealProgress(mealKey) {
@@ -621,7 +640,8 @@ function renderTodayView() {
     html += renderCountdownRing(mt.label, null, progress, true, remaining, mt.time);
   } else {
     const next = getNextMeal();
-    html += renderCountdownRing(next.meal, null, 0, false, { hours: next.hours, mins: next.mins, secs: next.secs }, null);
+    const progress = getWaitingProgress(next);
+    html += renderCountdownRing(next.meal, null, progress, false, { hours: next.hours, mins: next.mins, secs: next.secs }, null);
   }
 
   // Verdict pill
@@ -759,7 +779,7 @@ function updateCountdownDom() {
       return;
     }
     const next = getNextMeal();
-    progress = 0;
+    progress = getWaitingProgress(next);
     remaining = { hours: next.hours, mins: next.mins, secs: next.secs };
   }
 
