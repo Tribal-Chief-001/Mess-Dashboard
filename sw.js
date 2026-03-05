@@ -1,10 +1,11 @@
-// Mess Intel V2 — Service Worker
-const CACHE_NAME = 'mess-intel-v2';
+// Mess Intel V3 — Service Worker
+const CACHE_NAME = 'mess-intel-v3';
 const ASSETS = [
     '/',
     '/index.html',
     '/style.css',
     '/app.js',
+    '/firebase-ratings.js',
     '/manifest.json',
     '/assets/food/breakfast.png',
     '/assets/food/curry.png',

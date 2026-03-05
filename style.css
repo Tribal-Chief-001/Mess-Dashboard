@@ -533,11 +533,26 @@ body {
 }
 
 /* ─── STAR RATING ─── */
+.rating-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
 .star-rating {
   display: flex;
-  gap: 2px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
   cursor: pointer;
   flex-shrink: 0;
+}
+
+.stars-wrap {
+  display: flex;
+  gap: 2px;
 }
 
 .star-rating .star {
@@ -559,6 +574,58 @@ body {
 
 .star-rating .star.pop {
   animation: starPop 0.35s var(--ease-bounce);
+}
+
+/* Community Rating Label */
+.community-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+  animation: fadeIn 0.4s var(--ease);
+}
+
+.community-rating .cr-avg {
+  color: var(--star-color);
+  font-weight: 600;
+}
+
+.community-rating .cr-votes {
+  opacity: 0.7;
+}
+
+/* Community Status Card (Stats View) */
+.community-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 20px;
+  margin-bottom: 16px;
+  border-radius: 100px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.community-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff3b3b;
+  flex-shrink: 0;
+}
+
+.community-status-dot.active {
+  background: var(--tier-4);
+  animation: pulse 2s ease-in-out infinite;
 }
 
 /* Hero dish highlight */

@@ -118,11 +118,18 @@
         <div class="onboarding-card">
             <div class="onboarding-emoji">⭐</div>
             <h3>Rate your food</h3>
-            <p>Tap the stars on any dish to rate it. Your ratings are saved locally.</p>
+            <p>Tap the stars on any dish to rate it. Your rating joins <strong>community averages</strong> from all
+                students!</p>
             <button class="onboarding-btn" id="onboarding-dismiss">Got it</button>
         </div>
     </div>
 
+    <!-- Firebase SDK (v9 compat — works without build step) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+    <script src="firebase-ratings.js"></script>
     <script src="app.js"></script>
 
     <!-- Vercel Speed Insights -->

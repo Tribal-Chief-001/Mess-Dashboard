@@ -352,10 +352,30 @@ function getSavedRating(day, meal, itemIdx) {
 
 function saveRating(day, meal, itemIdx, rating) {
   localStorage.setItem(getRatingKey(day, meal, itemIdx), rating);
+  // Push to Firebase community ratings
+  if (typeof submitCommunityRating === 'function') {
+    submitCommunityRating(day, meal, itemIdx, rating);
+  }
+}
+
+function getUserRating(day, meal, itemIdx) {
+  return getSavedRating(day, meal, itemIdx) ?? MENU[day][meal][itemIdx].rating;
 }
 
 function getItemRating(day, meal, itemIdx) {
-  return getSavedRating(day, meal, itemIdx) ?? MENU[day][meal][itemIdx].rating;
+  // Prefer community average if available, fallback to user/default
+  if (typeof getCommunityRating === 'function') {
+    const community = getCommunityRating(day, meal, itemIdx);
+    if (community && community.count > 0) return community.avg;
+  }
+  return getUserRating(day, meal, itemIdx);
+}
+
+function getItemCommunityData(day, meal, itemIdx) {
+  if (typeof getCommunityRating === 'function') {
+    return getCommunityRating(day, meal, itemIdx);
+  }
+  return null;
 }
 
 function getMealAvg(day, meal) {
@@ -453,11 +473,17 @@ function showToast(msg) {
 
 // ─── STAR COMPONENT ───
 function createStars(day, meal, itemIdx, container) {
-  const rating = getItemRating(day, meal, itemIdx);
+  const userRating = getUserRating(day, meal, itemIdx);
+  const community = getItemCommunityData(day, meal, itemIdx);
   container.innerHTML = '';
+
+  // Stars wrapper
+  const starsWrap = document.createElement('div');
+  starsWrap.className = 'stars-wrap';
+
   for (let i = 1; i <= 5; i++) {
     const star = document.createElement('span');
-    star.className = 'star' + (i <= rating ? ' filled' : '');
+    star.className = 'star' + (i <= userRating ? ' filled' : '');
     star.textContent = '★';
     star.dataset.value = i;
     star.addEventListener('click', (e) => {
@@ -471,18 +497,29 @@ function createStars(day, meal, itemIdx, container) {
       createStars(day, meal, itemIdx, container);
       // Update averages in current view
       refreshCurrentView();
+      showToast('⭐ Rating submitted to community!');
     });
     star.addEventListener('mouseenter', () => {
-      container.querySelectorAll('.star').forEach((s, idx) => {
+      starsWrap.querySelectorAll('.star').forEach((s, idx) => {
         s.classList.toggle('filled', idx < i);
       });
     });
     star.addEventListener('mouseleave', () => {
-      container.querySelectorAll('.star').forEach((s, idx) => {
-        s.classList.toggle('filled', idx < rating);
+      starsWrap.querySelectorAll('.star').forEach((s, idx) => {
+        s.classList.toggle('filled', idx < userRating);
       });
     });
-    container.appendChild(star);
+    starsWrap.appendChild(star);
+  }
+
+  container.appendChild(starsWrap);
+
+  // Community rating label
+  if (community && community.count > 0) {
+    const label = document.createElement('div');
+    label.className = 'community-rating';
+    label.innerHTML = `<span class="cr-avg">★${community.avg}</span><span class="cr-votes">·  ${community.count} vote${community.count !== 1 ? 's' : ''}</span>`;
+    container.appendChild(label);
   }
 }
 
@@ -600,7 +637,9 @@ function renderTodayView() {
       const isHero = heroDish === i;
       html += `<li class="food-item${isHero ? ' hero-dish' : ''}">
         <span class="food-name">${item.name}</span>
-        <div class="star-rating" data-day="${today}" data-meal="${meal}" data-idx="${i}"></div>
+        <div class="rating-row">
+          <div class="star-rating" data-day="${today}" data-meal="${meal}" data-idx="${i}"></div>
+        </div>
       </li>`;
     });
     html += `</ul></div></div>`;
@@ -678,7 +717,9 @@ function renderWeeklyView() {
       MENU[day][meal].forEach((item, i) => {
         html += `<li class="food-item">
           <span class="food-name">${item.name}</span>
-          <div class="star-rating" data-day="${day}" data-meal="${meal}" data-idx="${i}"></div>
+          <div class="rating-row">
+            <div class="star-rating" data-day="${day}" data-meal="${meal}" data-idx="${i}"></div>
+          </div>
         </li>`;
       });
       html += `</ul></div>`;
@@ -853,11 +894,18 @@ function renderStatsView() {
     </div>
   </div>`;
 
+  // Community status badge
+  const fbActive = typeof isFirebaseActive === 'function' && isFirebaseActive();
+  html += `<div class="community-status-card">
+    <div class="community-status-dot ${fbActive ? 'active' : ''}"></div>
+    <span>${fbActive ? 'community ratings live' : 'offline mode — ratings local only'}</span>
+  </div>`;
+
   // Footer
   html += `<div style="text-align:center; padding:24px 0 8px;">
     <p style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;">
-      ratings are vibes-based. your mileage may vary. a lot.<br>
-      tap any star to adjust · saved locally
+      ratings powered by the community. your vote shapes the average.<br>
+      tap any star to rate · synced across all students
     </p>
   </div>`;
 
@@ -913,7 +961,7 @@ function registerSW() {
 }
 
 // ─── INIT ───
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   initOnboarding();
   initRouter();
@@ -922,6 +970,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // Header buttons
   document.getElementById('theme-btn').addEventListener('click', toggleTheme);
   document.getElementById('share-btn').addEventListener('click', shareMenu);
+
+  // Initialize Firebase community ratings
+  if (typeof initFirebase === 'function') {
+    const firebaseOk = await initFirebase();
+    if (firebaseOk) {
+      await fetchAllAggregates();
+      // Refresh view with community data
+      refreshCurrentView();
+      // Listen for real-time updates from other users
+      listenForAggregateChanges(() => {
+        refreshCurrentView();
+      });
+    }
+  }
 
   // Auto-refresh countdown every 30s
   setInterval(() => {
