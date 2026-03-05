@@ -1270,6 +1270,61 @@ body {
   color: var(--tier-5);
 }
 
+/* ─── DYNAMIC AURA ─── */
+body[data-aura="verdict-abort"] {
+  --glow-color: rgba(255, 59, 59, 0.15);
+}
+
+body[data-aura="verdict-warning"] {
+  --glow-color: rgba(255, 140, 0, 0.15);
+}
+
+body[data-aura="verdict-mid"] {
+  --glow-color: rgba(136, 136, 136, 0.15);
+}
+
+body[data-aura="verdict-decent"] {
+  --glow-color: rgba(52, 211, 153, 0.15);
+}
+
+body[data-aura="verdict-legendary"] {
+  --glow-color: rgba(251, 191, 36, 0.15);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 50% 50%, var(--glow-color, transparent) 0%, transparent 60%);
+  z-index: -1;
+  pointer-events: none;
+  transition: background 1.5s ease;
+}
+
+/* ─── CONFETTI ─── */
+.confetti {
+  position: fixed;
+  font-size: 20px;
+  pointer-events: none;
+  z-index: 9999;
+  animation: confettiExplode 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes confettiExplode {
+  0% {
+    transform: translate(0, 0) scale(0.5) rotate(0deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(1.5) rotate(45deg);
+    opacity: 0;
+  }
+}
+
 /* ─── ANIMATIONS ─── */
 @keyframes fadeIn {
   from {

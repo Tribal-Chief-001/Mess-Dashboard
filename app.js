@@ -545,6 +545,12 @@ function createStars(day, meal, itemIdx, container) {
       // Animate
       star.classList.add('pop');
       setTimeout(() => star.classList.remove('pop'), 350);
+
+      // CONFETTI
+      if (newRating === 5) {
+        spawnConfetti(e.clientX, e.clientY);
+      }
+
       // Re-render stars
       createStars(day, meal, itemIdx, container);
       // Update averages in current view
@@ -623,6 +629,9 @@ function renderTodayView() {
   const currentMeal = getCurrentMeal();
   const dayAvg = getDayAvg(today);
   const verdict = getVerdict(dayAvg);
+
+  // Dynamic Aura Update
+  document.body.setAttribute('data-aura', verdict.cls);
 
   let html = '';
 
@@ -1097,6 +1106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   initOnboarding();
   initRouter();
+  initSwipeGestures();
   registerSW();
 
   // Header buttons
@@ -1124,3 +1134,60 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }, 1000);
 });
+
+// ─── SWIPE GESTURES ───
+function initSwipeGestures() {
+  const views = ['today', 'weekly', 'stats'];
+  let touchStartX = 0;
+  let touchEndX = 0;
+  const threshold = 50; // minimum distance to be considered a swipe
+
+  const appContainer = document.querySelector('.app') || document.body;
+
+  appContainer.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  appContainer.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  }, { passive: true });
+
+  function handleSwipe() {
+    if (touchEndX < touchStartX - threshold) {
+      // Swiped Left -> Next tab
+      const currentIdx = views.indexOf(currentView);
+      if (currentIdx < views.length - 1) {
+        navigate(views[currentIdx + 1]);
+      }
+    }
+    if (touchEndX > touchStartX + threshold) {
+      // Swiped Right -> Prev tab
+      const currentIdx = views.indexOf(currentView);
+      if (currentIdx > 0) {
+        navigate(views[currentIdx - 1]);
+      }
+    }
+  }
+}
+
+// ─── CONFETTI ───
+function spawnConfetti(x, y) {
+  const emojis = ['🔥', '✨', '🌟', '💯', '🚀'];
+  for (let i = 0; i < 10; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+
+    // Randomize movement
+    const tx = (Math.random() - 0.5) * 100;
+    const ty = (Math.random() - 1) * 100;
+    el.style.setProperty('--tx', `${tx}px`);
+    el.style.setProperty('--ty', `${ty}px`);
+
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000); // Remove after animation
+  }
+}
