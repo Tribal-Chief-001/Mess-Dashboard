@@ -1,5 +1,5 @@
-// Mess Intel V3 — Service Worker
-const CACHE_NAME = 'mess-intel-v3';
+// Mess Intel V4 — Service Worker
+const CACHE_NAME = 'mess-intel-v4';
 const ASSETS = [
     '/',
     '/index.html',
@@ -35,6 +35,17 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
     e.respondWith(
-        caches.match(e.request).then(cached => cached || fetch(e.request))
+        fetch(e.request)
+            .then(networkResponse => {
+                // If network fetch succeeds, clone it into cache
+                return caches.open(CACHE_NAME).then(cache => {
+                    cache.put(e.request, networkResponse.clone());
+                    return networkResponse;
+                });
+            })
+            .catch(() => {
+                // If network fails (offline), fall back to cache
+                return caches.match(e.request);
+            })
     );
 });
