@@ -6,13 +6,14 @@
 // 🔧 REPLACE these with your actual Firebase project config
 // Go to: console.firebase.google.com → Project Settings → Web App
 const FIREBASE_CONFIG = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-    projectId: "YOUR_PROJECT",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "000000000000",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyBgXQR6qOONyYq0vT393xE7p6Me4UYH98E",
+    authDomain: "mess-intel.firebaseapp.com",
+    databaseURL: "https://mess-intel-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "mess-intel",
+    storageBucket: "mess-intel.firebasestorage.app",
+    messagingSenderId: "981169816058",
+    appId: "1:981169816058:web:6dba7c876d5d41b0096443",
+    measurementId: "G-ZRMD4ZDCWV"
 };
 
 // ─── STATE ───
